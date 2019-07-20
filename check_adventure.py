@@ -30,7 +30,10 @@ def go_to_adventure(session):
 
 def is_adventure_available(parser):
     adventure_button = parser.find('button', {'class': 'adventureWhite'})
-    adventure_count_tag = adventure_button.find('div', {'class': 'speechBubbleContent'})
+    if adventure_button:
+        adventure_count_tag = adventure_button.find('div', {'class': 'speechBubbleContent'})
+    else:
+        return False
 
     hero_is_available = is_hero_available(parser)
 
@@ -41,7 +44,11 @@ def is_adventure_available(parser):
 
 
 def is_hero_available(parser):
-    hero_is_not_available = parser.find('img', {'alt': 'on the way'})
+    hero_is_not_available = parser.find('img', {'alt': 'na cestě'})
     hero_is_available = not bool(hero_is_not_available)
+    hero_is_healthy = int(parser.find('div', {'class': 'bar'})['style'].split(':')[1][:-1])
+    if hero_is_healthy < 50:
+        logger.info('Hero is not healthy')
+        return False
 
     return hero_is_available

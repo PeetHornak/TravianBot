@@ -5,7 +5,9 @@ from building.parse_town_buildings import UpgradeBuilding
 from building.parse_village_fields import BuildField
 from credentials import VILLAGE_URL, TOWN_URL
 from send_troops import TroopsOrder
+from logger import get_logger
 
+logger = get_logger(__name__)
 
 def builders_manager():
 
@@ -13,11 +15,12 @@ def builders_manager():
     village_number = 1
     village_url = os.environ[f'VILLAGE_URL_{village_number}']
     buildings_queue = os.environ[f'BUILDINGS_QUEUE_{village_number}']
-
     # while village_url is not None
     while village_url:
 
-        buildings_queue = buildings_queue.split()
+        buildings_queue = buildings_queue.split(',')
+        if '' in buildings_queue:
+            buildings_queue.remove('')
         asyncio.async(builder(village_url, buildings_queue))
 
         village_number += 1

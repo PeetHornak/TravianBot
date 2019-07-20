@@ -26,7 +26,8 @@ class BuildField(Builder):
     def set_parser_location_to_build(self):
         """Return link to field where will be built new resource field"""
 
-        minimal_resource = self.minimal_resource()
+        resource_name = self.minimal_resource()
+        minimal_resource = resource_name[:2]
         field_link = self.link_to_field_to_build(minimal_resource)
 
         # If there are some field <10lvl then return link to it. Logged error and sleep otherwise.
@@ -37,27 +38,26 @@ class BuildField(Builder):
             self.parser_location_to_build = BeautifulSoup(field_page, 'html.parser')
 
             if self.is_enough_crop():
-                return
+                logger.info('Upgrading {}'.format(resource_name))
+                return True
 
             else:
-                field_link = self.link_to_field_to_build('crop')
+                field_link = self.link_to_field_to_build('Ob')
                 full_field_link = SERVER_URL + field_link
                 field_page = self.session.get(full_field_link).text
                 self.parser_location_to_build = BeautifulSoup(field_page, 'html.parser')
+                logger.info('Upgrading Obilí')
+                return True
         else:
-            logger.error('Some field reached max level!')
-            sleep(6000)
+            return False
 
     def minimal_resource(self):
         """Return minimal resource"""
         resources_amount = self.parse_resources_amount()
+        logger.info('Current resources: {}'.format(resources_amount))
         minimal_resource = min(resources_amount, key=resources_amount.get)
 
-        # In fields it's called wood instead lumber
-        if minimal_resource == 'lumber':
-            minimal_resource = 'wood'
-
-        return minimal_resource
+        return minimal_resource[:2]
 
     def parse_fields(self):
         """Return dictionary with names of fields and appropriate links"""
@@ -78,7 +78,7 @@ class BuildField(Builder):
 
         for field, link in fields.items():
             fields_level = int(field[-1])
-            if (minimal_resource in field.lower()) and (10 >= fields_level < lowest_level):
+            if (minimal_resource.lower() in field.lower()) and (10 >= fields_level < lowest_level):
                 lowest_level = fields_level
                 field_link = link
 

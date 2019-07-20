@@ -10,8 +10,9 @@ from requests.exceptions import RequestException
 from check_adventure import check_adventure
 from authorization import logged_in_session
 from credentials import SERVER_URL
-from logger import info_logger_for_future_events
+from logger import info_logger_for_future_events, get_logger
 
+logger = get_logger(__name__)
 
 class Builder(ABC):
     """Extendable class for building"""
@@ -24,9 +25,21 @@ class Builder(ABC):
     async def __call__(self, *args, **kwargs):
         self.session = logged_in_session()
         self.set_parser_of_main_page()
+        with open('/tmp/log.html', 'a') as out:
+            out.write(self.parser_main_page.text + '\n')
         check_adventure(self.session, self.parser_main_page)
         await self.check_queue()
-        self.set_parser_location_to_build()
+        while True:
+            result = self.set_parser_location_to_build()
+            if not result:
+                info_logger_for_future_events('Could not find location to build, waiting until ', 300)
+                await sleep(300)
+            else:
+                break
+
+        if result == -1:
+            logger.info('Did not find building, removing from queue')
+            return True
 
         successfully_built = await self.build()
 
@@ -37,7 +50,11 @@ class Builder(ABC):
         """Building function with handle of errors. If success return True, else None"""
         try:
             link_to_build = self.parse_link_to_build()
+            if link_to_build is None:
+                info_logger_for_future_events('Did not find button to build, waiting until ', 300)
+                await sleep(300)
             self.session.get(link_to_build)
+
 
         # Lack of resources raises ValueError. Catch here.
         except ValueError:
@@ -74,9 +91,19 @@ class Builder(ABC):
 
         # If enough resources parse onclick attribute
         if self.is_enough_resources():
-            link_to_upgrade = self.parser_location_to_build.find_all(class_='section1')[0].button.get('onclick')
-        else:
-            raise ValueError('Lack of resources')
+            button = self.parser_location_to_build.find_all(class_='section1')
+            if button:
+                button = button[0]
+            else:
+                button = self.parser_location_to_build.find(class_='contractLink')
+            link_to_upgrade = button.button.get('onclick')
+            coins = button.button.get('coins')
+            if not link_to_upgrade:
+                logger.error('Not button to click')
+                return None
+            elif coins:
+                logger.error('We need to use coins')
+                return None
 
         # parse link to build
         pattern = re.compile(r'(?<=\').*(?=\')')
@@ -86,8 +113,8 @@ class Builder(ABC):
 
     def parse_required_resources(self):
         """Return dictionary with resources which required to build smth"""
-        required_resources = self.parser_location_to_build.find_all(class_='resources')
-        required_resources = {span.get('title').lower(): int(span.contents[1]) for span in required_resources}
+        required_resources = self.parser_location_to_build.find_all(class_='resource')
+        required_resources = {span.get('title').lower(): int(span.contents[1].contents[0]) for span in required_resources}
 
         return required_resources
 
@@ -98,8 +125,9 @@ class Builder(ABC):
         iron = int(self.parse_resource('l3'))
         crop = int(self.parse_resource('l4'))
 
-        resources_amount = {'lumber': lumber, 'clay': clay,
-                            'iron': iron, 'crop': crop}
+        resources_amount = {'Dřevo': lumber, 'Hlina': clay,
+                            'Železo': iron, 'Obilí': crop}
+
         return resources_amount
 
     def parse_resource(self, id):
@@ -108,6 +136,7 @@ class Builder(ABC):
         resource = self.parser_main_page.find(id=id).text
         resource = resource.replace('.', '')
         resource = resource.replace(',', '')
+        resource = resource.replace(' ', '').strip()
 
         amount = pattern.search(resource)
         amount = amount.group(0)
@@ -152,11 +181,10 @@ class Builder(ABC):
 
     def is_enough_crop(self):
         """Check if enough crop for building smth new."""
-        parse_status_messages = self.parser_location_to_build.find_all(class_='statusMessage')
+        parse_status_messages = self.parser_location_to_build.find_all(class_='errorMessage')
         if parse_status_messages:
             parse_message = parse_status_messages[0].text
-
-            if parse_message == 'Lack of food: extend cropland first!':
+            if parse_message == 'Nedostatek potravy: postavte nebo rozšiřte obilné pole':
                 return False
 
         return True
