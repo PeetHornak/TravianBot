@@ -12,7 +12,6 @@ logger = get_logger(__name__)
 async def builders_manager(village_url, village_number):
     while True:
         buildings_queue = os.environ.get(f'BUILDINGS_QUEUE_{village_number}')
-        # buildings_queue = 'Akademie, Akademie, Akademie, Akademie' # TEST_VALUE
         if buildings_queue:
             os.environ[f'BUILDINGS_QUEUE_{village_number}'] = ''
         buildings_queue = buildings_queue.split(',')
@@ -52,7 +51,6 @@ def main():
     loop = asyncio.get_event_loop()
     village_number = 1
     url = os.environ.get(f'VILLAGE_URL_{village_number}')
-    # url = '?newdid=32261&'    #TEST_VALUE
     while url:
         loop.create_task(builders_manager(url, village_number))
         village_number += 1

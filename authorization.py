@@ -2,7 +2,7 @@ import requests
 
 from bs4 import BeautifulSoup
 
-from credentials import LOGIN_PASSWORD, LOGIN_USERNAME, HEADERS, VILLAGE_URL
+from credentials import LOGIN_PASSWORD, LOGIN_USERNAME, HEADERS, SERVER_URL, VILLAGE_URL
 
 
 def logged_in_session():
@@ -20,6 +20,6 @@ def logged_in_session():
         'login': login_value
     }
 
-    session.post('https://ts3.czsk.travian.com/login.php', data=data)
+    session.post(f'{SERVER_URL}login.php', data=data)
 
     return session

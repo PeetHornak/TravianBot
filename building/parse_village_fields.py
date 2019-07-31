@@ -54,7 +54,7 @@ class BuildField(Builder):
         logger.info('Current resources: {}'.format(resources_amount))
         minimal_resource = min(resources_amount, key=resources_amount.get)
 
-        return minimal_resource[:2]
+        return minimal_resource
 
     def parse_fields(self):
         """Return dictionary with names of fields and appropriate links"""
