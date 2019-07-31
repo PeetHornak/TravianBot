@@ -1,8 +1,8 @@
 import os
 
 SERVER_URL = 'https://ts3.czsk.travian.com/'
-LOGIN_USERNAME = os.environ['LOGIN_USERNAME']
-LOGIN_PASSWORD = os.environ['LOGIN_PASSWORD']
+LOGIN_USERNAME = os.environ.get('LOGIN_USERNAME')
+LOGIN_PASSWORD = os.environ.get('LOGIN_PASSWORD')
 
 HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',

@@ -6,12 +6,15 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+MIN_HEALTH = 25
 
 def check_adventure(session=None, parser=None):
     """If any of adventures available then go, else do nothing."""
     if is_adventure_available(parser):
         go_to_adventure(session)
         logger.info('Going to adventure')
+    else:
+        logger.info('Adventure is not avaliable')
 
 
 def go_to_adventure(session):
@@ -47,7 +50,7 @@ def is_hero_available(parser):
     hero_is_not_available = parser.find('img', {'alt': 'na cestě'})
     hero_is_available = not bool(hero_is_not_available)
     hero_is_healthy = int(parser.find('div', {'class': 'bar'})['style'].split(':')[1][:-1])
-    if hero_is_healthy < 50:
+    if hero_is_healthy < MIN_HEALTH:
         logger.info('Hero is not healthy')
         return False
 

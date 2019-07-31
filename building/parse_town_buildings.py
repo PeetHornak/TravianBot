@@ -28,10 +28,13 @@ class UpgradeBuilding(Builder):
         """Return all buildings and related links"""
         buildings = self.parser_main_page.find_all(class_='good')
         buildings2 = self.parser_main_page.find_all(class_='notNow')
+        buildings = list(set(buildings) | set(buildings2))
         building_links = {}
         for building in buildings:
             title_attr = building.get('title')
             name = title_attr.partition(" <span")[0]  # Gets the name of the building. I any language
+            if not name:
+                continue
             link = building.get('onclick').split("'")[1]
             building_links[name] = link
 
@@ -43,7 +46,7 @@ class UpgradeBuilding(Builder):
             return None
         link_to_be_build = buildings[0].get('class')
         building_links = {}
-        for i in range(1,3):
+        for i in range(1,4):
             link_to_build = SERVER_URL + 'build.php?id=' + link_to_be_build[-2][-2:]+'&category={}'.format(i)
             page = self.session.get(link_to_build).text
             page = BeautifulSoup(page, 'html.parser')
@@ -61,7 +64,7 @@ class UpgradeBuilding(Builder):
         building_to_build = self.queue[0]
         building_sites = self.parse_buildings()
 
-        # If given building was found then set parser, else KeyError.
+        # If given building was found then set parser, else try to find never building never built before.
         if building_to_build in building_sites:
             if building_sites[building_to_build] is None:
                 return False

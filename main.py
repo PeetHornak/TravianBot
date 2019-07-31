@@ -9,34 +9,26 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
-def builders_manager():
-
-    # for the first iteration in a while loop
-    village_number = 1
-    village_url = os.environ[f'VILLAGE_URL_{village_number}']
-    buildings_queue = os.environ[f'BUILDINGS_QUEUE_{village_number}']
-    # while village_url is not None
-    while village_url:
-
+async def builders_manager(village_url, village_number):
+    while True:
+        buildings_queue = os.environ.get(f'BUILDINGS_QUEUE_{village_number}')
+        # buildings_queue = 'Akademie, Akademie, Akademie, Akademie' # TEST_VALUE
+        if buildings_queue:
+            os.environ[f'BUILDINGS_QUEUE_{village_number}'] = ''
         buildings_queue = buildings_queue.split(',')
         if '' in buildings_queue:
             buildings_queue.remove('')
-        asyncio.async(builder(village_url, buildings_queue))
-
-        village_number += 1
-
-        village_url = os.environ.get(f'VILLAGE_URL_{village_number}')
-        buildings_queue = os.environ.get(f'BUILDINGS_QUEUE_{village_number}')
-
+        if buildings_queue:
+            buildings_queue = [building.strip() for building in buildings_queue]
+        await builder(village_url, buildings_queue)
 
 async def builder(village_special_url, buildings_queue):
-
     if buildings_queue:
         upgrade_building = UpgradeBuilding(TOWN_URL + village_special_url, buildings_queue)
         await upgrade_building()
-
-    build_field = BuildField(VILLAGE_URL + village_special_url)
-    await build_field()
+    else:
+        build_field = BuildField(VILLAGE_URL + village_special_url)
+        await build_field()
 
 
 # def trooper():
@@ -56,13 +48,22 @@ async def builder(village_special_url, buildings_queue):
 
 
 def main():
-    builders_manager()
     # trooper()
-
     loop = asyncio.get_event_loop()
-    loop.run_forever()
-    loop.close()
+    village_number = 1
+    url = os.environ.get(f'VILLAGE_URL_{village_number}')
+    # url = '?newdid=32261&'    #TEST_VALUE
+    while url:
+        loop.create_task(builders_manager(url, village_number))
+        village_number += 1
+        url = os.environ.get(f'VILLAGE_URL_{village_number}')
 
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        loop.close()
+    except Exception as e:
+        logger.error(e)
 
 if __name__ == '__main__':
     main()

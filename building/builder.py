@@ -25,43 +25,40 @@ class Builder(ABC):
     async def __call__(self, *args, **kwargs):
         self.session = logged_in_session()
         self.set_parser_of_main_page()
-        with open('/tmp/log.html', 'a') as out:
-            out.write(self.parser_main_page.text + '\n')
         check_adventure(self.session, self.parser_main_page)
-        await self.check_queue()
-        while True:
-            result = self.set_parser_location_to_build()
-            if not result:
-                info_logger_for_future_events('Could not find location to build, waiting until ', 300)
-                await sleep(300)
-            else:
-                break
+        if not await self.check_queue():
+            return False
+        result = self.set_parser_location_to_build()
+        if not result:
+            info_logger_for_future_events('Could not find location to build, waiting until ', 300)
+            await sleep(300)
+            return False
 
         if result == -1:
             logger.info('Did not find building, removing from queue')
             return True
 
         successfully_built = await self.build()
+        # successfully_built = True
 
         # Trying to build something until success then return True.
-        return True if successfully_built else await self.__call__()
+        if successfully_built:
+            return True
+        else:
+            return False
 
     async def build(self):
         """Building function with handle of errors. If success return True, else None"""
         try:
             link_to_build = self.parse_link_to_build()
             if link_to_build is None:
-                info_logger_for_future_events('Did not find button to build, waiting until ', 300)
-                await sleep(300)
-            self.session.get(link_to_build)
+                seconds_to_enough = self.parse_seconds_to_enough_resources() + randint(15, 90)
 
-
-        # Lack of resources raises ValueError. Catch here.
-        except ValueError:
-            seconds_to_enough = self.parse_seconds_to_enough_resources() + randint(15, 90)
-
-            info_logger_for_future_events('Lack of resources. Will be enough in ', seconds_to_enough)
-            await sleep(seconds_to_enough)
+                info_logger_for_future_events('Lack of resources. Will be enough in ', seconds_to_enough)
+                await sleep(seconds_to_enough)
+                return False
+            else:
+                self.session.get(link_to_build)
 
         except RequestException:
             info_logger_for_future_events('RequestException occurred. Waiting... Next attempt in', 1500)
@@ -82,13 +79,13 @@ class Builder(ABC):
 
             info_logger_for_future_events('Something is building already... Will be completed in ', seconds_build_left)
             await sleep(seconds_build_left)
-
-            # Renew the session and parser
-            await self.__call__()
+            return False
+        else:
+            return True
 
     def parse_link_to_build(self):
         """Return a link which starts building if enough resources, else ValueError"""
-
+        building_link = None
         # If enough resources parse onclick attribute
         if self.is_enough_resources():
             button = self.parser_location_to_build.find_all(class_='section1')
@@ -98,23 +95,18 @@ class Builder(ABC):
                 button = self.parser_location_to_build.find(class_='contractLink')
             link_to_upgrade = button.button.get('onclick')
             coins = button.button.get('coins')
-            if not link_to_upgrade:
-                logger.error('Not button to click')
+            if not link_to_upgrade or coins:
                 return None
-            elif coins:
-                logger.error('We need to use coins')
-                return None
-
-        # parse link to build
-        pattern = re.compile(r'(?<=\').*(?=\')')
-        building_link = SERVER_URL + pattern.search(link_to_upgrade).group(0)
+            # parse link to build
+            pattern = re.compile(r'(?<=\').*(?=\')')
+            building_link = SERVER_URL + pattern.search(link_to_upgrade).group(0)
 
         return building_link
 
     def parse_required_resources(self):
         """Return dictionary with resources which required to build smth"""
-        required_resources = self.parser_location_to_build.find_all(class_='resource')
-        required_resources = {span.get('title').lower(): int(span.contents[1].contents[0]) for span in required_resources}
+        required_resources = self.parser_location_to_build.find(id='contract').find_all(class_='resource')
+        required_resources = {span.get('title'): int(span.contents[1].contents[0]) for span in required_resources}
 
         return required_resources
 

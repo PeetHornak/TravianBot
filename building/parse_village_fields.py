@@ -18,10 +18,7 @@ class BuildField(Builder):
         super().__init__(village_page_url)
 
     async def __call__(self, *args, **kwargs):
-        successfully_built = await super().__call__()
-
-        if successfully_built:
-            await self.__call__()
+        await super().__call__()
 
     def set_parser_location_to_build(self):
         """Return link to field where will be built new resource field"""
@@ -38,7 +35,7 @@ class BuildField(Builder):
             self.parser_location_to_build = BeautifulSoup(field_page, 'html.parser')
 
             if self.is_enough_crop():
-                logger.info('Upgrading {}'.format(resource_name))
+                logger.info('To be upgraded: {}'.format(resource_name))
                 return True
 
             else:
@@ -46,7 +43,7 @@ class BuildField(Builder):
                 full_field_link = SERVER_URL + field_link
                 field_page = self.session.get(full_field_link).text
                 self.parser_location_to_build = BeautifulSoup(field_page, 'html.parser')
-                logger.info('Upgrading Obilí')
+                logger.info('To be upgraded: Obilí')
                 return True
         else:
             return False

@@ -15,11 +15,11 @@ def logged_in_session():
     data = {
         'name': LOGIN_USERNAME,
         'password': LOGIN_PASSWORD,
-        's1': 'Login',
-        'w': '1600:900',
+        's1': 'Přihlásit+se',
+        'w': '',
         'login': login_value
     }
 
-    session.post(VILLAGE_URL, data=data)
+    session.post('https://ts3.czsk.travian.com/login.php', data=data)
 
     return session
