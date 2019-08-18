@@ -3,7 +3,7 @@ import os
 
 from building.parse_town_buildings import UpgradeBuilding
 from building.parse_village_fields import BuildField
-from credentials import VILLAGE_URL, TOWN_URL
+from credentials import VILLAGE_URL, TOWN_URL, ROME_ACTIVE
 from send_troops import TroopsOrder
 from logger import get_logger
 
@@ -22,12 +22,16 @@ async def builders_manager(village_url, village_number):
         await builder(village_url, buildings_queue)
 
 async def builder(village_special_url, buildings_queue):
+    build_field = BuildField(VILLAGE_URL + village_special_url)
     if buildings_queue:
         upgrade_building = UpgradeBuilding(TOWN_URL + village_special_url, buildings_queue)
-        await upgrade_building()
+        if ROME_ACTIVE:
+            await asyncio.gather(upgrade_building(), build_field())
+        else:
+            await asyncio.gather(upgrade_building())
+
     else:
-        build_field = BuildField(VILLAGE_URL + village_special_url)
-        await build_field()
+        await asyncio.gather(build_field())
 
 
 # def trooper():

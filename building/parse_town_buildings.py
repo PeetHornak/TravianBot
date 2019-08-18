@@ -2,9 +2,11 @@ import re
 
 from bs4 import BeautifulSoup
 
+from asyncio import sleep
+
 from .builder import Builder
 from credentials import SERVER_URL
-from logger import get_logger
+from logger import info_logger_for_future_events, get_logger
 
 logger = get_logger(__name__)
 
@@ -85,3 +87,44 @@ class UpgradeBuilding(Builder):
                 return True
             else:
                 return -1
+
+    async def parse_specific_seconds_build_left(self):
+        parser = self.parser_main_page
+        is_built = parser.find_all(class_='buildDuration')
+        if not is_built:
+            return 0
+        second_left1 = is_built[0]
+        building_name1 = second_left1.parent.find(class_='name').text
+
+        if any(field in building_name1 for field in self.resources_dict.values()):
+            second_left = None
+        else:
+            second_left = second_left1
+
+        if len(is_built) > 1 and second_left is None:
+            second_left2 = is_built[1]
+            building_name2 = second_left2.parent.find(class_='name').text
+            if any(field in building_name2 for field in self.resources_dict.values()):
+                second_left = None
+            else:
+                second_left = second_left2
+
+        # If found buildDuration class then return its value.
+        #  Or there is no queue at all so we can build, return 0.
+        if second_left:
+            second_left = second_left.span.get('value')
+            second_left = int(second_left)
+
+            if second_left > 0:
+                return second_left
+
+            # Event-jam in travian. We can only wait.
+            else:
+                # 240 seconds to keep session alive.
+                info_logger_for_future_events('Event jam. Waiting... Next attempt in ', 240)
+                await sleep(240)
+                self.set_parser_of_main_page()
+
+                return await self.parse_seconds_build_left()
+
+        return 0

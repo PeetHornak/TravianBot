@@ -9,12 +9,19 @@ from requests.exceptions import RequestException
 
 from check_adventure import check_adventure
 from authorization import logged_in_session
-from credentials import SERVER_URL
+from credentials import SERVER_URL, ROME_ACTIVE
 from logger import info_logger_for_future_events, get_logger
 
 logger = get_logger(__name__)
 
 class Builder(ABC):
+
+    resources_dict = {
+        'Dřevo': 'Dřevorubec',
+        'Železo': 'Železný důl',
+        'Hlína': 'Hliněný důl',
+        'Obilí': 'Obilné pole'
+    }
     """Extendable class for building"""
     def __init__(self, main_page_url):
         self.main_page_url = main_page_url
@@ -66,7 +73,10 @@ class Builder(ABC):
 
         else:
             self.set_parser_of_main_page()
-            seconds_left = await self.parse_seconds_build_left() + randint(15, 90)
+            if ROME_ACTIVE:
+                seconds_left = await self.parse_specific_seconds_build_left() + randint(15, 90)
+            else:
+                seconds_left = await self.parse_seconds_build_left() + randint(15, 90)
             info_logger_for_future_events('Building... Will be completed in ', seconds_left)
             await sleep(seconds_left)
 
@@ -74,9 +84,11 @@ class Builder(ABC):
 
     async def check_queue(self):
         """If buildings queue is not empty, then sleep until complete."""
-        if await self.parse_seconds_build_left():
+        if ROME_ACTIVE:
+            seconds_build_left = await self.parse_specific_seconds_build_left()
+        else:
             seconds_build_left = await self.parse_seconds_build_left()
-
+        if seconds_build_left:
             info_logger_for_future_events('Something is building already... Will be completed in ', seconds_build_left)
             await sleep(seconds_build_left)
             return False
@@ -150,7 +162,6 @@ class Builder(ABC):
         """Return amount of time in order to build smth."""
         parser = self.parser_main_page
         second_left = parser.find_all(class_='buildDuration')
-
         # If found buildDuration class then return its value.
         #  Or there is no queue at all so we can build, return 0.
         if second_left:
@@ -170,6 +181,10 @@ class Builder(ABC):
                 return await self.parse_seconds_build_left()
 
         return 0
+
+    @abstractmethod
+    def parse_specific_seconds_build_left(self):
+        """Return amount of time in order to build smth."""
 
     def is_enough_crop(self):
         """Check if enough crop for building smth new."""
@@ -200,3 +215,4 @@ class Builder(ABC):
     @abstractmethod
     def set_parser_location_to_build(self):
         """Set parser to location where will be built new building or field"""
+
