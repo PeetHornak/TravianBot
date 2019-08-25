@@ -3,7 +3,7 @@ import os
 
 from building.parse_town_buildings import UpgradeBuilding
 from building.parse_village_fields import BuildField
-from credentials import VILLAGE_URL, TOWN_URL, ROME_ACTIVE
+from credentials import VILLAGE_URL, TOWN_URL, SERVER_URL
 from send_troops import TroopsOrder
 from logger import get_logger
 
@@ -42,21 +42,13 @@ async def builders_manager(village_url, village_number):
     # else:
     #     await asyncio.gather(build_field())
 
-
-# def trooper():
-#     with open('raids.txt', 'r') as f:
-#
-#         for line in f.readlines():
-#             coords, time_of_next_raid = line.split(';')
-#             coords = eval(coords)
-#             asyncio.async(order(coords=coords, time_of_next_raid=time_of_next_raid))
-#
-#
-# async def order(coords=None, time_of_next_raid=None):
-#
-#     order = TroopsOrder(barrack_url='https://ts7.travian.com/build.php?newdid=57154&id=39&tt=2&gid=16',
-#                         coords=coords, time_of_next_raid=time_of_next_raid)
-#     await order()
+async def troop_raid(url, village_number):
+    f = open(f'/tmp/RAIDS_{village_number}', 'w+')
+    f.write(os.environ.get(f'RAIDS_{village_number}'))
+    f.close()
+    send_troops = TroopsOrder(SERVER_URL + 'build.php' + url+ 'id=39&tt=2&gid=16', village_number)
+    while True:
+        await send_troops()
 
 
 def main():
@@ -65,7 +57,8 @@ def main():
     village_number = 1
     url = os.environ.get(f'VILLAGE_URL_{village_number}')
     while url:
-        loop.create_task(builders_manager(url, village_number))
+        # loop.create_task(builders_manager(url, village_number))
+        loop.create_task(troop_raid(url, village_number))
         village_number += 1
         url = os.environ.get(f'VILLAGE_URL_{village_number}')
 
