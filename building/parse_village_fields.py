@@ -18,7 +18,17 @@ class BuildField(Builder):
         super().__init__(village_page_url)
 
     async def __call__(self, *args, **kwargs):
-        await super().__call__()
+        try:
+            await super().__call__()
+        except Exception as e:
+            msg = str(e).lower()
+            logger.error(msg)
+        finally:
+            await self.__call__()
+
+    async def dummy(self):
+        await sleep(3)
+        logger.info('FIELD')
 
     def set_parser_location_to_build(self):
         """Return link to field where will be built new resource field"""

@@ -54,6 +54,10 @@ class Builder(ABC):
         else:
             return False
 
+    @abstractmethod
+    def dummy(self):
+        """ Dummy """
+
     async def build(self):
         """Building function with handle of errors. If success return True, else None"""
         try:
@@ -117,8 +121,14 @@ class Builder(ABC):
 
     def parse_required_resources(self):
         """Return dictionary with resources which required to build smth"""
-        required_resources = self.parser_location_to_build.find(id='contract').find_all(class_='resource')
-        required_resources = {span.get('title'): int(span.contents[1].contents[0]) for span in required_resources}
+        required_resources = self.parser_location_to_build.find(id='contract')
+        if required_resources:
+            required_resources = required_resources.find_all(class_='resource')
+            required_resources = {span.get('title'): int(span.contents[1].contents[0]) for span in required_resources}
+        else:
+            resources = ['Dřevo', 'Hlína', 'Železo', 'Obilí', 'Spotřeba obilí']
+            values = [int(val.text) for val in self.parser_location_to_build.find_all(class_='inlineIcon resource')]
+            required_resources = dict(zip(resources, values))
 
         return required_resources
 

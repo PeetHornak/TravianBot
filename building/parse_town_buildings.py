@@ -12,19 +12,41 @@ logger = get_logger(__name__)
 
 class UpgradeBuilding(Builder):
     """Build the list of buildings"""
-    def __init__(self, town_page_url, queue):
+    def __init__(self, town_page_url, queue_file):
         super().__init__(town_page_url)
-        self.queue = list(queue)
+        self.queue = []
+        self.queue_file = queue_file
 
     async def __call__(self, *args, **kwargs):
         """Build buildings until queue is not empty."""
+        queue_file = open(self.queue_file, 'r+')
+        buildings_queue = queue_file.read()
+        if buildings_queue:
+            queue_file.truncate(0)
+        queue_file.close()
+        buildings_queue = buildings_queue.split(',')
+        if '' in buildings_queue:
+            buildings_queue.remove('')
+        if buildings_queue:
+            self.queue += [building.strip() for building in buildings_queue]
+
         if self.queue:
-            successfully_built = await super().__call__(*args, **kwargs)
-
-            if successfully_built:
-                del self.queue[0]
-
+            try:
+                successfully_built = await super().__call__(*args, **kwargs)
+                if successfully_built:
+                    del self.queue[0]
+            except Exception as e:
+                msg = str(e).lower()
+                logger.error(msg)
+            finally:
+                await self.__call__()
+        else:
+            await sleep(60)
             await self.__call__()
+
+    async def dummy(self):
+        await sleep(12)
+        logger.info('BUILDING')
 
     def parse_buildings(self):
         """Return all buildings and related links"""
