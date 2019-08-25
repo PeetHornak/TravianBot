@@ -48,6 +48,7 @@ class TroopsOrder:
         self.parse_troops_amount()
 
         for attack in self.attacks:
+            self.troops_to_send = copy(TROOPS)
             await sleep(randint(6, 14))
             coords, troops = attack.split(';')
             try:
@@ -69,7 +70,8 @@ class TroopsOrder:
                 if not success:
                     continue
 
-            self.send_troops()
+            # self.send_troops()
+            self.sent_troops = True
             self.attacks.remove(attack)
 
         if self.sent_troops is False:
@@ -164,7 +166,7 @@ class TroopsOrder:
         return True
 
     def use_available_troops(self):
-        self.troops_to_send = TROOPS
+        self.troops_to_send = copy(TROOPS)
         if self.troops['t5'] >= 6:
             self.troops_to_send.update({'t5': 6})
             logger.info("Don't have enough troops, sending 6 EIs")
