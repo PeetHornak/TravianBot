@@ -47,9 +47,8 @@ class TroopsOrder:
         self.parse_troops_amount()
 
         for attack in self.attacks:
-            await sleep(randint(2,8))
+            await sleep(randint(6, 14))
             coords, troops = attack.split(';')
-            # coords example {'x': 2, 'y': -5}
             try:
                 x, y = coords.split('|')
                 x = int(x[1:])
@@ -80,11 +79,12 @@ class TroopsOrder:
         if self.sent_troops is False:
             time_to_return = self.time_for_troops_to_return()
             if time_to_return:
-                info_logger_for_future_events('Did send any attack, waiting for return until ', time_to_return)
+                info_logger_for_future_events('Didnt send any attack, waiting for return until ', time_to_return)
                 await sleep(time_to_return)
             else:
-                info_logger_for_future_events('Did send any attack and no one returning, waiting until ', time_to_return)
-                await sleep(120)
+                random = randint(3600, 4100)
+                info_logger_for_future_events('Didnt send any attack and no one returning, waiting until ', random)
+                await sleep(random)
 
     def send_troops(self):
         """The main function"""
