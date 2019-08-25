@@ -16,6 +16,8 @@ logger = get_logger(__name__)
 
 class Builder(ABC):
 
+    queue = []
+    queue_file = None
     resources_dict = {
         'Dřevo': 'Dřevorubec',
         'Železo': 'Železný důl',
@@ -30,6 +32,7 @@ class Builder(ABC):
         self.session = None
 
     async def __call__(self, *args, **kwargs):
+        self.load_queue()
         self.session = logged_in_session()
         self.set_parser_of_main_page()
         check_adventure(self.session, self.parser_main_page)
@@ -46,8 +49,7 @@ class Builder(ABC):
             return True
 
         successfully_built = await self.build()
-        # successfully_built = True
-
+        self.load_queue()
         # Trying to build something until success then return True.
         if successfully_built:
             return True
@@ -57,6 +59,18 @@ class Builder(ABC):
     @abstractmethod
     def dummy(self):
         """ Dummy """
+
+    def load_queue(self):
+        queue_file = open(Builder.queue_file, 'r+')
+        buildings_queue = queue_file.read()
+        if buildings_queue:
+            queue_file.truncate(0)
+        queue_file.close()
+        buildings_queue = buildings_queue.split(',')
+        if '' in buildings_queue:
+            buildings_queue.remove('')
+        if buildings_queue:
+            Builder.queue += [building.strip() for building in buildings_queue]
 
     async def build(self):
         """Building function with handle of errors. If success return True, else None"""
@@ -77,10 +91,10 @@ class Builder(ABC):
 
         else:
             self.set_parser_of_main_page()
-            if ROME_ACTIVE:
-                seconds_left = await self.parse_specific_seconds_build_left() + randint(15, 90)
-            else:
-                seconds_left = await self.parse_seconds_build_left() + randint(15, 90)
+            # if ROME_ACTIVE:
+            seconds_left = await self.parse_specific_seconds_build_left() + randint(15, 90)
+            # else:
+            #     seconds_left = await self.parse_seconds_build_left() + randint(15, 90)
             info_logger_for_future_events('Building... Will be completed in ', seconds_left)
             await sleep(seconds_left)
 
@@ -88,10 +102,10 @@ class Builder(ABC):
 
     async def check_queue(self):
         """If buildings queue is not empty, then sleep until complete."""
-        if ROME_ACTIVE:
-            seconds_build_left = await self.parse_specific_seconds_build_left()
-        else:
-            seconds_build_left = await self.parse_seconds_build_left()
+        # if ROME_ACTIVE:
+        seconds_build_left = await self.parse_specific_seconds_build_left()
+        # else:
+        #     seconds_build_left = await self.parse_seconds_build_left()
         if seconds_build_left:
             info_logger_for_future_events('Something is building already... Will be completed in ', seconds_build_left)
             await sleep(seconds_build_left)

@@ -5,7 +5,7 @@ from asyncio import sleep
 from bs4 import BeautifulSoup
 
 from .builder import Builder
-from credentials import SERVER_URL
+from credentials import SERVER_URL, ROME_ACTIVE
 from logger import info_logger_for_future_events, get_logger
 
 
@@ -19,12 +19,14 @@ class BuildField(Builder):
 
     async def __call__(self, *args, **kwargs):
         try:
-            await super().__call__()
+            if not Builder.queue or ROME_ACTIVE:
+                await super().__call__()
         except Exception as e:
             msg = str(e).lower()
             logger.error(msg)
         finally:
-            await self.__call__()
+            if not Builder.queue:
+                await self.__call__()
 
     async def dummy(self):
         await sleep(3)

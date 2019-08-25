@@ -14,35 +14,22 @@ class UpgradeBuilding(Builder):
     """Build the list of buildings"""
     def __init__(self, town_page_url, queue_file):
         super().__init__(town_page_url)
-        self.queue = []
-        self.queue_file = queue_file
+        Builder.queue_file = queue_file
+        Builder.queue = []
+        super().load_queue()
 
     async def __call__(self, *args, **kwargs):
         """Build buildings until queue is not empty."""
-        queue_file = open(self.queue_file, 'r+')
-        buildings_queue = queue_file.read()
-        if buildings_queue:
-            queue_file.truncate(0)
-        queue_file.close()
-        buildings_queue = buildings_queue.split(',')
-        if '' in buildings_queue:
-            buildings_queue.remove('')
-        if buildings_queue:
-            self.queue += [building.strip() for building in buildings_queue]
-
-        if self.queue:
+        if Builder.queue:
             try:
                 successfully_built = await super().__call__(*args, **kwargs)
                 if successfully_built:
-                    del self.queue[0]
+                    del Builder.queue[0]
             except Exception as e:
                 msg = str(e).lower()
                 logger.error(msg)
             finally:
                 await self.__call__()
-        else:
-            await sleep(60)
-            await self.__call__()
 
     async def dummy(self):
         await sleep(12)
@@ -83,9 +70,9 @@ class UpgradeBuilding(Builder):
         return building_links
 
     def set_parser_location_to_build(self):
-        if not self.queue:
+        if not Builder.queue:
             return False
-        building_to_build = self.queue[0]
+        building_to_build = Builder.queue[0]
         building_sites = self.parse_buildings()
 
         # If given building was found then set parser, else try to find never building never built before.

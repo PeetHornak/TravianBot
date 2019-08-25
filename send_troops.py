@@ -121,7 +121,12 @@ class TroopsOrder:
 
         # Get tags with amount of units.
         # unit_name_tags = overview_page_parser.find_all('img', class_='unit')
-        overview_page_parser = overview_page_parser.find_all(class_="troop_details")[-1]
+
+        overview_page_parser = overview_page_parser.find_all(class_="troop_details")
+        for page in overview_page_parser:
+            if 'Vlastní jednotky' in page.text:
+                overview_page_parser = page
+                break
         unit_amount_tags = overview_page_parser.find_all('td', class_='unit')
 
         # Create dictionary with troops information
