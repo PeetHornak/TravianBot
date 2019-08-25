@@ -35,9 +35,10 @@ class TroopsOrder:
 
     async def __call__(self, *args, **kwargs):
         self.sent_troops =  False
-        with open(self.file_name) as f:
-            self.attacks += [line.rstrip('\n') for line in f]
-            self.attacks = list(dict.fromkeys(self.attacks))
+        if not self.attacks:
+            with open(self.file_name) as f:
+                self.attacks += [line.rstrip('\n') for line in f]
+                self.attacks = list(dict.fromkeys(self.attacks))
         if self.attacks:
             self.session = logged_in_session()
         else:
@@ -79,8 +80,9 @@ class TroopsOrder:
         if self.sent_troops is False:
             time_to_return = self.time_for_troops_to_return()
             if time_to_return:
-                info_logger_for_future_events('Didnt send any attack, waiting for return until ', time_to_return)
-                await sleep(time_to_return)
+                random = randint(30, 300)
+                info_logger_for_future_events('Didnt send any attack, waiting for return until ', time_to_return + random)
+                await sleep(time_to_return + random)
             else:
                 random = randint(3600, 4100)
                 info_logger_for_future_events('Didnt send any attack and no one returning, waiting until ', random)
