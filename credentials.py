@@ -1,6 +1,6 @@
 import os
 
-SERVER_URL = 'https://ts3.czsk.travian.com/'
+SERVER_URL = 'https://tx3.czsk.travian.com/'
 LOGIN_USERNAME = os.environ.get('LOGIN_USERNAME')
 LOGIN_PASSWORD = os.environ.get('LOGIN_PASSWORD')
 ROME_ACTIVE = os.environ.get('R')
