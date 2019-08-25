@@ -64,18 +64,13 @@ class TroopsOrder:
             diffkeys = [k for k in self.troops_to_send.keys() if self.troops_to_send[k] != TROOPS[k]]
             if not diffkeys:
                 continue
-            if self.troops_available():
-                self.send_troops()
-                self.attacks.remove(attack)
-            else:
-                self.troops_to_send = TROOPS
-                self.troops_to_send.update({'t4': 6})
-                if self.troops_available():
-                    logger.info("Don't have enough troops, sending 6 EIs")
-                    self.send_troops()
-                    self.attacks.remove(attack)
-                else:
+            if not self.troops_available():
+                success = self.use_available_troops()
+                if not success:
                     continue
+
+            self.send_troops()
+            self.attacks.remove(attack)
 
         if self.sent_troops is False:
             time_to_return = self.time_for_troops_to_return()
@@ -167,6 +162,23 @@ class TroopsOrder:
             if value < self.troops_to_send[key]:
                 return False
         return True
+
+    def use_available_troops(self):
+        self.troops_to_send = TROOPS
+        if self.troops['t5'] >= 6:
+            self.troops_to_send.update({'t5': 6})
+            logger.info("Don't have enough troops, sending 6 EIs")
+            return True
+
+        if self.troops['t3'] >= 6:
+            self.troops_to_send.update({'t3': 6})
+            logger.info("Don't have enough troops, sending 6 Imperians")
+            return True
+
+        if self.troops['t1'] >= 6:
+            self.troops_to_send.update({'t1': 6})
+            logger.info("Don't have enough troops, sending 6 Leggos")
+            return True
 
     def time_for_troops_to_return(self):
         overview_page_link = self.barrack_url.replace('tt=2', 'tt=1')
