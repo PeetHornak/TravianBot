@@ -41,7 +41,6 @@ class TroopsOrder:
         if self.attacks:
             self.session = logged_in_session()
         else:
-            info_logger_for_future_events('No raids, waiting until ', 60)
             await sleep(60)
             return
 

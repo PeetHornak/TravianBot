@@ -57,7 +57,7 @@ def main():
     village_number = 1
     url = os.environ.get(f'VILLAGE_URL_{village_number}')
     while url:
-        # loop.create_task(builders_manager(url, village_number))
+        loop.create_task(builders_manager(url, village_number))
         loop.create_task(troop_raid(url, village_number))
         village_number += 1
         url = os.environ.get(f'VILLAGE_URL_{village_number}')
